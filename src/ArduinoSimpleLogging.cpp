@@ -20,6 +20,9 @@ size_t ArduinoSimpleLogging::LogTarget::write(const uint8_t *buffer,
 
 size_t ArduinoSimpleLogging::log(ArduinoSimpleLogging::Level level,
                                  const uint8_t *buffer, size_t size) {
+  if (prebuffer_pos > 0) {
+    flush_prebuffer();
+  }
   for (auto &handler : handlers) {
     if ((handler.mask & level) != 0) {
       handler.stream.write(buffer, size);
@@ -28,14 +31,22 @@ size_t ArduinoSimpleLogging::log(ArduinoSimpleLogging::Level level,
   return size;
 }
 
+void ArduinoSimpleLogging::flush_prebuffer() {
+  size_t pos = prebuffer_pos;
+  prebuffer_pos = 0;
+  log(prebuffer_level, prebuffer, pos);
+}
+
 size_t ArduinoSimpleLogging::log(ArduinoSimpleLogging::Level level,
                                  uint8_t byte) {
-  for (auto &handler : handlers) {
-    if ((handler.mask & level) != 0) {
-      handler.stream.write(byte);
-    }
+  if (prebuffer_level != level && prebuffer_pos > 0) {
+    flush_prebuffer();
   }
-
+  prebuffer_level = level;
+  prebuffer[prebuffer_pos++] = byte;
+  if (prebuffer_pos == prebuffer_length || byte == '\n') {
+    flush_prebuffer();
+  }
   return 1;
 }
 

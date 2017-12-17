@@ -41,6 +41,8 @@ class ArduinoSimpleLogging {
   static LogTarget warning;
   static LogTarget error;
 
+  ArduinoSimpleLogging() : prebuffer_pos(0) {}
+
   size_t log(Level level, const uint8_t *buffer, size_t size);
   size_t log(Level level, uint8_t);
 
@@ -59,6 +61,12 @@ class ArduinoSimpleLogging {
     LogHandler(Level level, Print &stream)
         : mask(makeMask(level)), stream(stream) {}
   };
+
+  void flush_prebuffer();
+  static const size_t prebuffer_length = 16;
+  uint8_t prebuffer[prebuffer_length];
+  size_t prebuffer_pos;
+  Level prebuffer_level;
 
   std::forward_list<LogHandler> handlers;
 };
